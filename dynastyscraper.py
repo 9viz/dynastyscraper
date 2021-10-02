@@ -20,9 +20,6 @@ soup = bs4.BeautifulSoup(req.urlopen(base), "html.parser")
 # Chapters.  May or may not be divided by volumes.
 chapters = soup.find("dl", class_="chapter-list")
 
-# Volume?
-volp = bool(chapters.find("dt"))
-
 # dt is usually the volume number.
 # Return a dictionary with url as key, filename as val
 # def get_links(dds, dt=""):
@@ -44,19 +41,16 @@ def print_links(dds, dt=""):
 
     return
 
-if volp:
-    vol = ""
-    dds = []
-    for i in chapters:
-        if not isinstance(i, bs4.element.Tag):
-            continue
+vol = ""
+dds = []
+for i in chapters:
+    if not isinstance(i, bs4.element.Tag):
+        continue
 
-        if i.name == "dt":
-            print_links(dds, vol + "_")
-            vol = i.string
-            dds = []
-        elif i.name == "dd":
-            dds.append(i)
-    if dds: print_links(dds, (vol + "_") if vol else "")
-else:
-    print_links(chapters.find_all("dd"))
+    if i.name == "dt":
+        print_links(dds, vol + "_")
+        vol = i.string
+        dds = []
+    elif i.name == "dd":
+        dds.append(i)
+if dds: print_links(dds, (vol + "_") if vol else "")
