@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+#
+# This is a really crude script.
+# Dynasty url is the first argument.  Spats out shell-escaped wget
+# commands to get the cbzs.  Tested with the following:
+# 1. https://dynasty-scans.com/series/riko_haru_irukawa_hot_springs
+# 2. https://dynasty-scans.com/series/sakura_trick
+# 3. https://dynasty-scans.com/series/4_koma_starlight
+
 import bs4
 from shlex import quote as shell_quote
 import urllib.request as req
@@ -47,7 +55,6 @@ if volp:
             print_links(dds, vol + "_")
             vol = i.string
             dds = []
-            continue
         elif i.name == "dd":
             dds.append(i)
     if dds: print_links(dds, (vol + "_") if vol else "")
