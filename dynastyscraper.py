@@ -31,15 +31,11 @@ chapters = soup.find("dl", class_="chapter-list")
 #     return ret
 
 def print_links(dds, dt=""):
-    ret = {}
-
     for ch in dds:
         print("wget {} -O {}.cbz".format(
             shell_quote("https://dynasty-scans.com" + ch.a["href"] + "/download"),
             shell_quote(dt + ch.a.string)
         ))
-
-    return
 
 vol = ""
 dds = []
