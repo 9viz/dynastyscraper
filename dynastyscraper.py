@@ -52,7 +52,8 @@ def get_chapter_list(url):
             chs = []
         elif i.name == "dd":
             chs.append((i.a.string, "https://dynasty-scans.com" + i.a["href"]))
-
+    if chs:
+        ret[vol] = chs
     return ret
 
 def get_images(ch):
