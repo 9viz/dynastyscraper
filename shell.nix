@@ -5,6 +5,6 @@ stdenv.mkDerivation rec {
 
   buildInputs = with python3Packages; [
     beautifulsoup4
-  ];
+  ] ++ [ parallel ];
   nativeBuildInputs = [];
 }
