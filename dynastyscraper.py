@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 #
-# This is a really crude script.
-# Dynasty url is the first argument.  Spats out shell-escaped wget
-# commands to get the cbzs.  Tested with the following:
-# 1. https://dynasty-scans.com/series/riko_haru_irukawa_hot_springs
-# 2. https://dynasty-scans.com/series/sakura_trick
-# 3. https://dynasty-scans.com/series/4_koma_starlight
+# This is a really crude script.  This spits out shell-escaped wget
+# commands to download the images of the chapters.
+#
+# Each image is downloaded into "VOLUME_CHAPTER/XXX.png" where VOLUME
+# and CHAPTER are the volume and chapter names respectively.  If
+# MKDIRP environmental variable is not empty, then this script creates
+# the needed directories beforehand.
+#
+# Chapter or series URL may be given as arguments to the script.
 
 import json
 from os         import mkdir, getenv
