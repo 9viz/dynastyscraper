@@ -7,11 +7,15 @@
 # 2. https://dynasty-scans.com/series/sakura_trick
 # 3. https://dynasty-scans.com/series/4_koma_starlight
 
-import bs4
+import json
 from shlex import quote as shell_quote
+from sys import argv
+import re
 import urllib.request as req
 
-from sys import argv
+import bs4
+
+IMAGE_RE = re.compile(r"//<!\[CDATA\[")
 
 base = "https://dynasty-scans.com/series/miss_sunflower" #argv[1]
 
@@ -41,3 +45,11 @@ def get_chapter_list(url):
             chs.append("https://dynasty-scans.com" + i.a["href"])
 
     return ret
+
+def get_images(ch):
+    """Get list of image URLs for the chapter CH."""
+    soup = bs4.BeautifulSoup(req.urlopen(ch), "html.parser")
+    if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=IMAGE_RE).string):
+        return [ "https://dynasty-scans.com" + i["image"]
+                 for i in json.loads(r.group(1)) ]
+    else: return []
