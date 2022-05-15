@@ -9,6 +9,10 @@
 # the needed directories beforehand.
 #
 # Chapter or series URL may be given as arguments to the script.
+#
+# To read the chapter in zathura(1), use the following command
+#
+#       zip CHAPTER.zip CHAPTER_IMAGES/*
 
 import json
 from os         import mkdir, getenv
