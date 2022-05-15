@@ -4,9 +4,9 @@
 # commands to download the images of the chapters.
 #
 # Each image is downloaded into "VOLUME_CHAPTER/XXX.png" where VOLUME
-# and CHAPTER are the volume and chapter names respectively.  If
-# MKDIRP environmental variable is not empty, then this script creates
-# the needed directories beforehand.
+# and CHAPTER are the volume and chapter names respectively.  If DRY
+# environmental variable is not empty, then this script does not
+# create the needed directories beforehand.
 #
 # Chapter or series URL may be given as arguments to the script.
 #
@@ -25,7 +25,7 @@ import urllib.request as req
 import bs4
 
 IMAGE_RE = re.compile(r"//<!\[CDATA\[")
-MKDIRP   = getenv("MKDIRP")
+MKDIRP   = not getenv("DRY")
 
 def get_chapter_list(url):
     """Get the list of chapters in URL.
