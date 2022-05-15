@@ -72,7 +72,7 @@ def do(url):
         chp = get_chapter_list(url)
         for vol, ch in chp.items():
             for prefix, url in ch:
-                do1(get_images(url), vol+"_"+prefix)
+                do1(get_images(url), (vol+"_" if vol else "")+prefix)
 
 if __name__ == "__main__":
     for i in argv[1:]:
