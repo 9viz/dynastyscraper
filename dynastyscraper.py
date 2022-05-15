@@ -13,40 +13,31 @@ import urllib.request as req
 
 from sys import argv
 
-base = argv[1]
+base = "https://dynasty-scans.com/series/miss_sunflower" #argv[1]
 
-soup = bs4.BeautifulSoup(req.urlopen(base), "html.parser")
+def get_chapter_list(url):
+    """Get the list of chapters in URL.
 
-# Chapters.  May or may not be divided by volumes.
-chapters = soup.find("dl", class_="chapter-list")
+    Returned value is a dictionary { VOLUME: CHAPTERS } where VOLUME
+    is the name of the volume and CHAPTERS is a list of URLs to the
+    chapters URLs.  If the manga is not divided by volumes, then
+    VOLUME is an empty string.
 
-# dt is usually the volume number.
-# Return a dictionary with url as key, filename as val
-# def get_links(dds, dt=""):
-#     ret = {}
-#
-#     for ch in dds:
-#         ret["https://dynasty-scans.com" + ch.a["href"] + "/download"] = dt + ch.a.string
-#
-#     return ret
+    """
+    soup = bs4.BeautifulSoup(req.urlopen(url), "html.parser")
+    ret = {}
+    vol = ""
+    chs = []
+    chp = soup.find("dl", class_="chapter-list")
 
-def print_links(dds, dt=""):
-    for ch in dds:
-        print("wget {} -O {}.cbz".format(
-            shell_quote("https://dynasty-scans.com" + ch.a["href"] + "/download"),
-            shell_quote(dt + ch.a.string)
-        ))
+    for i in chp:
+        if not isinstance(i, bs4.element.Tag):
+            continue
+        if i.name == "dt":
+            if chs: ret[vol] = chs
+            vol = i.string
+            chs = []
+        elif i.name == "dd":
+            chs.append("https://dynasty-scans.com" + i.a["href"])
 
-vol = ""
-dds = []
-for i in chapters:
-    if not isinstance(i, bs4.element.Tag):
-        continue
-
-    if i.name == "dt":
-        print_links(dds, vol + "_")
-        vol = i.string
-        dds = []
-    elif i.name == "dd":
-        dds.append(i)
-if dds: print_links(dds, (vol + "_") if vol else "")
+    return ret
