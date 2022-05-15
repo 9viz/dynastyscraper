@@ -8,7 +8,7 @@
 # 3. https://dynasty-scans.com/series/4_koma_starlight
 
 import json
-from os         import mkdir
+from os         import mkdir, getenv
 from os.path    import splitext, basename
 from shlex      import quote as shell_quote
 from sys        import argv
@@ -18,6 +18,7 @@ import urllib.request as req
 import bs4
 
 IMAGE_RE = re.compile(r"//<!\[CDATA\[")
+MKDIRP   = getenv("MKDIRP")
 
 def get_chapter_list(url):
     """Get the list of chapters in URL.
@@ -56,7 +57,7 @@ def get_images(ch):
     return []
 
 def do1(images, dirname):
-    # mkdir(dirname)
+    if MKDIRP: mkdir(dirname)
     for n, i in enumerate(images):
         _, ext = splitext(i)
         print(f"wget {i} -O", shell_quote(f"{dirname}/{n+1:03}{ext}"))
