@@ -1,0 +1,21 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i sh
+# -*- mode: sh-mode -*-
+
+BASE=$PWD
+
+mkdcd(){
+	[ -d $1 ] || mkdir $1
+	cd $1
+}
+
+mkdcd tmp
+
+[ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
+
+parallel -j64 <wget.sh			# 64 should be harmless.
+
+for f in ./*; do
+	[ -d "$f" ] &&
+		echo "zip $(echo $f |tr ' ' '_').zip \"$f\"/*"
+done |parallel
