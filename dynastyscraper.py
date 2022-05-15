@@ -8,16 +8,16 @@
 # 3. https://dynasty-scans.com/series/4_koma_starlight
 
 import json
-from shlex import quote as shell_quote
-from sys import argv
+from os         import mkdir
+from os.path    import splitext, basename
+from shlex      import quote as shell_quote
+from sys        import argv
 import re
 import urllib.request as req
 
 import bs4
 
 IMAGE_RE = re.compile(r"//<!\[CDATA\[")
-
-base = "https://dynasty-scans.com/series/miss_sunflower" #argv[1]
 
 def get_chapter_list(url):
     """Get the list of chapters in URL.
@@ -52,4 +52,24 @@ def get_images(ch):
     if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=IMAGE_RE).string):
         return [ "https://dynasty-scans.com" + i["image"]
                  for i in json.loads(r.group(1)) ]
-    else: return []
+    return []
+
+def do1(images, dirname):
+    d = shell_quote(dirname)
+    # mkdir(dirname)
+    for n, i in enumerate(images):
+        _, ext = splitext(i)
+        print(f"wget {i} -O {d}/{n+1:03}{ext}")
+
+def do(url):
+    if "chapters" in url:
+        do1(get_images(url), basename(url))
+    else:
+        chp = get_chapter_list(url)
+        for vol, ch in chp.items():
+            for i in ch:
+                do1(get_images(i), vol+"_"+basename(i))
+
+if __name__ == "__main__":
+    for i in argv[1:]:
+        do(i)
