@@ -23,9 +23,10 @@ def get_chapter_list(url):
     """Get the list of chapters in URL.
 
     Returned value is a dictionary { VOLUME: CHAPTERS } where VOLUME
-    is the name of the volume and CHAPTERS is a list of URLs to the
-    chapters URLs.  If the manga is not divided by volumes, then
-    VOLUME is an empty string.
+    is the name of the volume and CHAPTERS is a tuple (NAME, URL)
+    where NAME is the name of the chapter and URL is the link to the
+    chapter.  If the manga is not divided by volumes, then VOLUME is
+    an empty string.
 
     """
     soup = bs4.BeautifulSoup(req.urlopen(url), "html.parser")
@@ -42,7 +43,7 @@ def get_chapter_list(url):
             vol = i.string
             chs = []
         elif i.name == "dd":
-            chs.append("https://dynasty-scans.com" + i.a["href"])
+            chs.append((i.a.string, "https://dynasty-scans.com" + i.a["href"]))
 
     return ret
 
@@ -55,11 +56,10 @@ def get_images(ch):
     return []
 
 def do1(images, dirname):
-    d = shell_quote(dirname)
     # mkdir(dirname)
     for n, i in enumerate(images):
         _, ext = splitext(i)
-        print(f"wget {i} -O {d}/{n+1:03}{ext}")
+        print(f"wget {i} -O", shell_quote(f"{dirname}/{n+1:03}{ext}"))
 
 def do(url):
     if "chapters" in url:
@@ -67,8 +67,8 @@ def do(url):
     else:
         chp = get_chapter_list(url)
         for vol, ch in chp.items():
-            for i in ch:
-                do1(get_images(i), vol+"_"+basename(i))
+            for prefix, url in ch:
+                do1(get_images(url), vol+"_"+prefix)
 
 if __name__ == "__main__":
     for i in argv[1:]:
