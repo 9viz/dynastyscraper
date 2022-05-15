@@ -47,7 +47,7 @@ def get_chapter_list(url):
     return ret
 
 def get_images(ch):
-    """Get list of image URLs for the chapter CH."""
+    """Get list of image URLs for the chapter with URL CH."""
     soup = bs4.BeautifulSoup(req.urlopen(ch), "html.parser")
     if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=IMAGE_RE).string):
         return [ "https://dynasty-scans.com" + i["image"]
