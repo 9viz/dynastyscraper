@@ -84,6 +84,19 @@ def batoto_get_chapter_list(url):
     chs.reverse()
     return chs
 
+def batoto_get_images():
+    """I'm unsure if this will be possible at all since bato.to relies
+    a lot on JavaScript.  Although the list of relative image URLs is
+    easy to fetch, getting the full URL is hard.  The server is also
+    embedded in the HTML <script> tag but it is obscured by a weird JS
+    evaluation thing.  Moreover, although the equivalent of
+    CryptJS.AES thing seems to be in pycrypt, I am unsure about
+    decrypting the 'server' variable.  If I'm not wrong, there is also
+    a timeout for fetching the images.  In general, this goes well
+    beyond my abilities.  :-(
+
+    """
+
 def do1(images, dirname):
     if MKDIRP: mkdir(dirname)
     for n, i in enumerate(images):
@@ -92,12 +105,12 @@ def do1(images, dirname):
 
 def do(url):
     if "chapters" in url:
-        do1(get_images(url), basename(url))
+        do1(dynasty_get_images(url), basename(url))
     else:
-        chp = get_chapter_list(url)
+        chp = dynasty_get_chapter_list(url)
         for vol, ch in chp.items():
             for prefix, url in ch:
-                do1(get_images(url), (vol+"_" if vol else "")+prefix)
+                do1(dynasty_get_images(url), (vol+"_" if vol else "")+prefix)
 
 if __name__ == "__main__":
     for i in argv[1:]:
