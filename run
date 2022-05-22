@@ -14,7 +14,7 @@ mkdcd ${DSTMPDIR:=./tmp}
 
 parallel -j64 <wget.sh			# 64 should be harmless.
 
-for f in ./*; do
+[ -z "$NOZIP" ] && for f in ./*; do
 	[ -d "$f" ] &&
 		echo "zip $(echo $f |tr ' ' '_').zip \"$f\"/*"
 done |parallel
