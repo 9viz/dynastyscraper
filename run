@@ -19,8 +19,6 @@ for f in ./*; do
 		echo "zip $(echo $f |tr ' ' '_').zip \"$f\"/*"
 done |parallel
 
-
-
 # Local Variables:
 # mode: sh
 # End:
