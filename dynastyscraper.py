@@ -17,6 +17,7 @@
 import json
 from os         import mkdir, getenv
 from os.path    import splitext, basename
+from os.path    import exists as file_exists_p
 from shlex      import quote as shell_quote
 from sys        import argv
 import re
@@ -26,7 +27,9 @@ import bs4
 
 DYNASTY_IMAGE_RE = re.compile(r"//<!\[CDATA\[")
 BATOTO_IMAGE_RE  = re.compile(r"(?:const|var) images = \[")
-MKDIRP   = not getenv("DRY")
+JS_CTXT          = None
+UA               = { "User-Agent": "Chrome/96.0.4664.110" }
+MKDIRP           = not getenv("DRY")
 
 def dynasty_get_chapter_list(url):
     """Get the list of chapters in URL.
@@ -74,7 +77,7 @@ def batoto_get_chapter_list(url):
     """
     chs = []
     # User-Agent is need to be set otherwise cloudfare pops up.
-    soup = bs4.BeautifulSoup(req.urlopen(req.Request(url, headers={ "User-Agent": "Chrome/96.0.4664.110" })),
+    soup = bs4.BeautifulSoup(req.urlopen(req.Request(url, headers=UA)),
                              "html.parser")
     for i in soup.find_all("a", class_="visited chapt"):
         # The name of the chapter is surrounded by newlines for some
@@ -84,33 +87,64 @@ def batoto_get_chapter_list(url):
     chs.reverse()
     return chs
 
-def batoto_get_images():
-    """I'm unsure if this will be possible at all since bato.to relies
-    a lot on JavaScript.  Although the list of relative image URLs is
-    easy to fetch, getting the full URL is hard.  The server is also
-    embedded in the HTML <script> tag but it is obscured by a weird JS
-    evaluation thing.  Moreover, although the equivalent of
-    CryptJS.AES thing seems to be in pycrypt, I am unsure about
-    decrypting the 'server' variable.  If I'm not wrong, there is also
-    a timeout for fetching the images.  In general, this goes well
-    beyond my abilities.  :-(
+def batoto_get_images(ch):
+    """Get list of image URLs for the chapter CH.
+
+    I came to know of duktape thanks to the Tachiyomi bato.to
+    extension.
 
     """
+    def js_eval(string):
+        """Evalulate JavaScript code in the string STRING."""
+        import pyduktape
+        global JS_CTXT
+        if not JS_CTXT:
+            JS_CTXT = pyduktape.DuktapeContext()
+            if not file_exists_p("./crypto.js"):
+                cryptojs = req.urlopen(req.Request(
+                    # The same URL tachiyomi uses.
+                    "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js",
+                    headers=UA))
+                with open("./crypto.js", "w") as f:
+                    f.write(cryptojs.read().decode("utf-8"))
+            JS_CTXT.eval_js_file("./crypto.js")
+        return JS_CTXT.eval_js(string)
+
+    soup = bs4.BeautifulSoup(req.urlopen(req.Request(ch, headers=UA)), "html.parser")
+    js = soup.find("script", text=BATOTO_IMAGE_RE).string
+
+    # Most of this magic can be figured out by reading the JavaScript
+    # sources in a chapter page.  Alternatively, refer to
+    # https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/batoto/src/eu/kanade/tachiyomi/extension/all/batoto/BatoTo.kt
+    server = re.search(r"(?:const|var) server = ([^;]+);", js).group(1)
+    batojs = re.search(r"(?:const|var) batojs = ([^;]+);", js).group(1)
+    base = js_eval(f"CryptoJS.AES.decrypt({server} ,{batojs}).toString(CryptoJS.enc.Utf8);").strip("\"")
+    return [ base + i for i in json.loads(re.search(r"(?:const|var) images = (\[.*\]);", js).group(1)) ]
 
 def do1(images, dirname):
     if MKDIRP: mkdir(dirname)
     for n, i in enumerate(images):
         _, ext = splitext(i)
-        print(f"wget {i} -O", shell_quote(f"{dirname}/{n+1:03}{ext}"))
+        if "?" in ext:
+            ext, _, _ = ext.partition("?")
+        print("wget {} -O {}".format(shell_quote(i), shell_quote(f"{dirname}/{n+1:03}{ext}")))
 
 def do(url):
-    if "chapters" in url:
-        do1(dynasty_get_images(url), basename(url))
-    else:
-        chp = dynasty_get_chapter_list(url)
-        for vol, ch in chp.items():
-            for prefix, url in ch:
-                do1(dynasty_get_images(url), (vol+"_" if vol else "")+prefix)
+    if "dynasty-scans.com" in url:
+        if "chapters" in url:
+            do1(dynasty_get_images(url), basename(url))
+        else:
+            chp = dynasty_get_chapter_list(url)
+            for vol, ch in chp.items():
+                for prefix, url in ch:
+                    do1(dynasty_get_images(url), (vol+"_" if vol else "")+prefix)
+    elif "bato.to" in url:
+        if "chapter" in url:
+            do1(batoto_get_images(url), basename(url))
+        else:
+            chp = batoto_get_chapter_list(url)
+            for name, ch in chp:
+                do1(batoto_get_images(ch), name.replace("\n", "", True))
 
 if __name__ == "__main__":
     for i in argv[1:]:
