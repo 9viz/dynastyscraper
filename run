@@ -1,6 +1,5 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i sh
-# -*- mode: sh-mode -*-
 
 BASE=$PWD
 
@@ -9,7 +8,7 @@ mkdcd(){
 	cd $1
 }
 
-mkdcd tmp
+mkdcd ${DSTMPDIR:=./tmp}
 
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
@@ -19,3 +18,9 @@ for f in ./*; do
 	[ -d "$f" ] &&
 		echo "zip $(echo $f |tr ' ' '_').zip \"$f\"/*"
 done |parallel
+
+
+
+# Local Variables:
+# mode: sh
+# End:
