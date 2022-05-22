@@ -24,10 +24,11 @@ import urllib.request as req
 
 import bs4
 
-IMAGE_RE = re.compile(r"//<!\[CDATA\[")
+DYNASTY_IMAGE_RE = re.compile(r"//<!\[CDATA\[")
+BATOTO_IMAGE_RE  = re.compile(r"(?:const|var) images = \[")
 MKDIRP   = not getenv("DRY")
 
-def get_chapter_list(url):
+def dynasty_get_chapter_list(url):
     """Get the list of chapters in URL.
 
     Returned value is a dictionary { VOLUME: CHAPTERS } where VOLUME
@@ -56,13 +57,32 @@ def get_chapter_list(url):
         ret[vol] = chs
     return ret
 
-def get_images(ch):
+def dynasty_get_images(ch):
     """Get list of image URLs for the chapter with URL CH."""
     soup = bs4.BeautifulSoup(req.urlopen(ch), "html.parser")
-    if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=IMAGE_RE).string):
+    if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=DYNASTY_IMAGE_RE).string):
         return [ "https://dynasty-scans.com" + i["image"]
                  for i in json.loads(r.group(1)) ]
     return []
+
+def batoto_get_chapter_list(url):
+    """Get the list of chapters in URL.
+
+    Returned value is a list of (NAME, URL) where NAME is the name of
+    chapter and URL is the link to the chapter.
+
+    """
+    chs = []
+    # User-Agent is need to be set otherwise cloudfare pops up.
+    soup = bs4.BeautifulSoup(req.urlopen(req.Request(url, headers={ "User-Agent": "Chrome/96.0.4664.110" })),
+                             "html.parser")
+    for i in soup.find_all("a", class_="visited chapt"):
+        # The name of the chapter is surrounded by newlines for some
+        # reason.
+        chs.append((i.text.strip(), "https://bato.to" + i["href"]))
+
+    chs.reverse()
+    return chs
 
 def do1(images, dirname):
     if MKDIRP: mkdir(dirname)
