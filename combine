@@ -1,0 +1,30 @@
+#!/bin/sh
+
+: ${DSTMPDIR:=./tmp}
+
+[ -d $DSTMPDIR/ALL ] || mkdir -p $DSTMPDIR/ALL
+
+cd $DSTMPDIR
+
+elisp - <<EOF
+(let ((n 0)
+      (i 0)
+      directories format)
+  (dolist (f (directory-files "." 'full directory-files-no-dot-files-regexp))
+    (when (file-directory-p (expand-file-name f))
+      (let ((files (directory-files f nil directory-files-no-dot-files-regexp)))
+        (push (cons f files) directories)
+        (setq n (+ n (length files))))))
+  (setq directories (sort directories (lambda (x y) (string-version-lessp (car x) (car y))))
+        format (format "%%0%dd" (length (number-to-string n))))
+  (with-temp-buffer
+    (pcase-dolist (\`(,dir . ,file) directories)
+     (dolist (f file)
+       (insert "mv " (shell-quote-argument (concat dir "/" f)) " "
+               "./ALL/" (format format i) "." (file-name-extension f)
+               "\n")
+       (setq i (1+ i))))
+    (write-region (point-min) (point-max) "./ALL.list")))
+EOF
+
+parallel -j64 <./ALL.list
