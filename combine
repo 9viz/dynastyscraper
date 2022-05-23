@@ -1,4 +1,6 @@
 #!/bin/sh
+# zathura(1) seems to struggle with these huge zip files, but okular(1)
+# does fine.
 
 : ${DSTMPDIR:=./tmp}
 

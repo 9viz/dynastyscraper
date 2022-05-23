@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 #
+# Licensed under BSD 2-Clause License.
+#
 # This is a really crude script.  This spits out shell-escaped wget
 # commands to download the images of the chapters.
 #
