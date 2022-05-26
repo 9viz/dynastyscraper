@@ -16,8 +16,10 @@ parallel -j64 <wget.sh			# 64 should be harmless.
 
 [ -z "$NOZIP" ] && for f in ./*; do
 	[ -d "$f" ] &&
-		echo "zip $(echo $f |tr ' ' '_').zip \"$f\"/*"
+		echo "zip \"$(echo $f |tr ' ' '_').cbz\" \"$f\"/*"
 done |parallel
+
+[ -n "$DSRMDIR" ] && find . -maxdepth 1 \( ! -name . ! -name .. \) -type d -exec rm -rf {} \;
 
 # Local Variables:
 # mode: sh
