@@ -21,5 +21,5 @@ in stdenv.mkDerivation rec {
     duktape
     pyduktape
   ];
-  nativeBuildInputs = [];
+  nativeBuildInputs = [ zip wget ];
 }
