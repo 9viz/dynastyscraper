@@ -1,5 +1,4 @@
-#!/usr/bin/env nix-shell
-#!nix-shell -i sh
+#!/bin/sh
 
 BASE=$PWD
 
@@ -9,6 +8,9 @@ mkdcd(){
 }
 
 mkdcd ${DSTMPDIR:=./tmp}
+
+. $BASE/bin/activate
+
 
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
@@ -20,7 +22,3 @@ parallel -j64 <wget.sh			# 64 should be harmless.
 done |parallel
 
 [ -n "$DSRMDIR" ] && find . -maxdepth 1 \( ! -name . ! -name .. \) -type d -exec rm -rf {} \;
-
-# Local Variables:
-# mode: sh
-# End:
