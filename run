@@ -9,8 +9,7 @@ mkdcd(){
 
 mkdcd ${DSTMPDIR:=./tmp}
 
-. $BASE/bin/activate
-
+[ -f $BASE/bin/activate ] && . $BASE/bin/activate
 
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
