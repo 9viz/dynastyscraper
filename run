@@ -11,13 +11,26 @@ mkdcd ${DSTMPDIR:=./tmp}
 
 [ -f $BASE/.venv/bin/activate ] && . $BASE/.venv/bin/activate
 
+# If python(1) is not "present", then alias it to python3.
+type python || {
+	alias python=python3
+}
+
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
 parallel -j64 <wget.sh			# 64 should be harmless.
 
-[ -z "$NOZIP" ] && for f in ./*; do
-	[ -d "$f" ] &&
-		echo "zip \"$(echo $f |tr ' ' '_').cbz\" \"$f\"/*"
-done |parallel
+# zathura(1) can't handle webp images as of [2022-06-10 வெ 18:00].
+[ -z "$NOWEBPCONV" ] && {
+	find . -type f -iname '*.webp' -print0 -exec \
+		 echo 'dwebp "{}" -o "{}".png' {} \; |parallel -0 -j64
+	find . -type f -iname '*.webp' -exec rm {} \;
+}
+
+[ -z "$NOZIP" ] &&
+	for f in ./*; do
+		[ -d "$f" ] &&
+			echo "zip \"$(echo $f |tr ' ' '_').cbz\" \"$f\"/*"
+	done |parallel
 
 [ -n "$DSRMDIR" ] && find . -maxdepth 1 \( ! -name . ! -name .. \) -type d -exec rm -rf {} \;
