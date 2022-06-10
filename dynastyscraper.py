@@ -28,7 +28,8 @@ import urllib.request as req
 import bs4
 
 DYNASTY_IMAGE_RE = re.compile(r"//<!\[CDATA\[")
-BATOTO_IMAGE_RE  = re.compile(r"(?:const|var) images = \[")
+BATOTO_IMAGE_RE_1  = re.compile(r"(?:const|var) images = \[")
+BATOTO_IMAGE_RE_2  = re.compile(r"(?:const|var) imgHttpLis = \[")
 JS_CTXT          = None
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
 MKDIRP           = not getenv("DRY")
@@ -114,15 +115,30 @@ def batoto_get_images(ch):
         return JS_CTXT.eval_js(string)
 
     soup = bs4.BeautifulSoup(request(ch), "html.parser")
-    js = soup.find("script", text=BATOTO_IMAGE_RE).string
+    if js := soup.find("script", text=BATOTO_IMAGE_RE_1):
+        # Most of this magic can be figured out by reading the JavaScript
+        # sources in a chapter page.  Alternatively, refer to
+        # https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/batoto/src/eu/kanade/tachiyomi/extension/all/batoto/BatoTo.kt
+        js = js.string
+        server = re.search(r"(?:const|var) server = ([^;]+);", js).group(1)
+        batojs = re.search(r"(?:const|var) batojs = ([^;]+);", js).group(1)
+        base = js_eval(f"CryptoJS.AES.decrypt({server} ,{batojs}).toString(CryptoJS.enc.Utf8);").strip("\"")
+        return [ base + i for i in json.loads(re.search(r"(?:const|var) images = (\[.*\]);", js).group(1)) ]
+    elif js := soup.find("script", text=BATOTO_IMAGE_RE_2):
+        # Again, thanks to tachiyomi for showing the light.  It is
+        # also easy enough to figure out if you read the JS files.
+        js = js.string
+        img = re.search(r"(?:const|var) imgHttpLis = ([^;]+);", js).group(1)
+        img = json.loads(img)
+        batoword = re.search(r"(?:const|var) batoWord = ([^;]+);", js).group(1)
+        batopass = re.search(r"(?:const|var) batoPass = ([^;]+);", js).group(1)
+        passwd = json.loads(js_eval(f"CryptoJS.AES.decrypt({batoword}, {batopass}).toString(CryptoJS.enc.Utf8);"))
+        if len(passwd) != len(img):
+            return [ ]
+        return [ i + "?" + passwd[n] for n, i in enumerate(img) ]
 
-    # Most of this magic can be figured out by reading the JavaScript
-    # sources in a chapter page.  Alternatively, refer to
-    # https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/batoto/src/eu/kanade/tachiyomi/extension/all/batoto/BatoTo.kt
-    server = re.search(r"(?:const|var) server = ([^;]+);", js).group(1)
-    batojs = re.search(r"(?:const|var) batojs = ([^;]+);", js).group(1)
-    base = js_eval(f"CryptoJS.AES.decrypt({server} ,{batojs}).toString(CryptoJS.enc.Utf8);").strip("\"")
-    return [ base + i for i in json.loads(re.search(r"(?:const|var) images = (\[.*\]);", js).group(1)) ]
+    return []
+
 
 def do1(images, dirname):
     if MKDIRP: mkdir(dirname)
