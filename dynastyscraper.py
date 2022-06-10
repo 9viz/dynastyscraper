@@ -33,6 +33,10 @@ JS_CTXT          = None
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
 MKDIRP           = not getenv("DRY")
 
+def request(url):
+    """Request URL."""
+    return req.urlopen(req.Request(url, headers=UA))
+
 def dynasty_get_chapter_list(url):
     """Get the list of chapters in URL.
 
@@ -43,7 +47,7 @@ def dynasty_get_chapter_list(url):
     an empty string.
 
     """
-    soup = bs4.BeautifulSoup(req.urlopen(url), "html.parser")
+    soup = bs4.BeautifulSoup(request(url), "html.parser")
     ret = {}
     vol = ""
     chs = []
@@ -64,7 +68,7 @@ def dynasty_get_chapter_list(url):
 
 def dynasty_get_images(ch):
     """Get list of image URLs for the chapter with URL CH."""
-    soup = bs4.BeautifulSoup(req.urlopen(ch), "html.parser")
+    soup = bs4.BeautifulSoup(request(ch), "html.parser")
     if r := re.search(r"var pages = (\[.*\])", soup.find("script", string=DYNASTY_IMAGE_RE).string):
         return [ "https://dynasty-scans.com" + i["image"]
                  for i in json.loads(r.group(1)) ]
@@ -79,8 +83,7 @@ def batoto_get_chapter_list(url):
     """
     chs = []
     # User-Agent is need to be set otherwise cloudfare pops up.
-    soup = bs4.BeautifulSoup(req.urlopen(req.Request(url, headers=UA)),
-                             "html.parser")
+    soup = bs4.BeautifulSoup(request(url), "html.parser")
     for i in soup.find_all("a", class_="visited chapt"):
         # The name of the chapter is surrounded by newlines for some
         # reason.
@@ -103,16 +106,14 @@ def batoto_get_images(ch):
         if not JS_CTXT:
             JS_CTXT = pyduktape.DuktapeContext()
             if not file_exists_p("./crypto.js"):
-                cryptojs = req.urlopen(req.Request(
-                    # The same URL tachiyomi uses.
-                    "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js",
-                    headers=UA))
+                # The same URL tachiyomi uses.
+                cryptojs = request("https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js")
                 with open("./crypto.js", "w") as f:
                     f.write(cryptojs.read().decode("utf-8"))
             JS_CTXT.eval_js_file("./crypto.js")
         return JS_CTXT.eval_js(string)
 
-    soup = bs4.BeautifulSoup(req.urlopen(req.Request(ch, headers=UA)), "html.parser")
+    soup = bs4.BeautifulSoup(request(ch), "html.parser")
     js = soup.find("script", text=BATOTO_IMAGE_RE).string
 
     # Most of this magic can be figured out by reading the JavaScript
