@@ -1,6 +1,4 @@
 tmp/
 crypto.js
 *.patch
-lib/
-pyvenv.cfg
-bin/
+.venv/
