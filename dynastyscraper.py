@@ -17,6 +17,7 @@
 #       zip CHAPTER.zip CHAPTER_IMAGES/*
 
 import json
+import multiprocessing as multiproc
 from os         import mkdir, getenv
 from os.path    import splitext, basename
 from os.path    import exists as file_exists_p
@@ -31,6 +32,7 @@ DYNASTY_IMAGE_RE = re.compile(r"//<!\[CDATA\[")
 BATOTO_IMAGE_RE_1  = re.compile(r"(?:const|var) images = \[")
 BATOTO_IMAGE_RE_2  = re.compile(r"(?:const|var) imgHttpLis = \[")
 JS_CTXT          = None
+PROCS = []
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
 MKDIRP           = not getenv("DRY")
 
@@ -140,7 +142,8 @@ def batoto_get_images(ch):
     return []
 
 
-def do1(images, dirname):
+def do1(image_fun, url, dirname):
+    images = image_fun(url)
     if MKDIRP: mkdir(dirname)
     for n, i in enumerate(images):
         _, ext = splitext(i)
@@ -151,20 +154,32 @@ def do1(images, dirname):
 def do(url):
     if "dynasty-scans.com" in url:
         if "chapters" in url:
-            do1(dynasty_get_images(url), basename(url))
+            do1(dynasty_get_images, url, basename(url))
         else:
             chp = dynasty_get_chapter_list(url)
             for vol, ch in chp.items():
                 for prefix, url in ch:
-                    do1(dynasty_get_images(url), (vol+"_" if vol else "")+prefix)
+                    print((vol+"_" if vol else "")+prefix)
+                    p = multiproc.Process(
+                        target=do1,
+                        args=(dynasty_get_images, url, (vol+"_" if vol else "")+prefix),
+                        name=url)
+                    PROCS.append(p)
+                    p.start()
     elif "bato.to" in url:
         if "chapter" in url:
-            do1(batoto_get_images(url), basename(url))
+            do1(batoto_get_images, url, basename(url))
         else:
             chp = batoto_get_chapter_list(url)
             for name, ch in chp:
-                do1(batoto_get_images(ch), name.replace("\n", "", True))
+                p = multiproc.Process(
+                    target=do1,
+                    args=(batoto_get_images, ch, name.replace("\n", "", True)),
+                    name=ch)
+                PROCS.append(p)
+                p.start()
 
 if __name__ == "__main__":
     for i in argv[1:]:
         do(i)
+    for p in PROCS: p.join()
