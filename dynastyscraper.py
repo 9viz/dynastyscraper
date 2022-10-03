@@ -108,11 +108,6 @@ def batoto_get_images(ch):
         global JS_CTXT
         if not JS_CTXT:
             JS_CTXT = pyduktape.DuktapeContext()
-            if not file_exists_p("./crypto.js"):
-                # The same URL tachiyomi uses.
-                cryptojs = request("https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js")
-                with open("./crypto.js", "w") as f:
-                    f.write(cryptojs.read().decode("utf-8"))
             JS_CTXT.eval_js_file("./crypto.js")
         return JS_CTXT.eval_js(string)
 
@@ -170,6 +165,14 @@ def do(url):
                     PROCS.append(p)
                     p.start()
     elif "bato.to" in url:
+        # There seems to be a race condition somewhere when trying
+        # to eval crypto.js so just fetch it earlier when the
+        # processes aren't spawned yet.
+        if not file_exists_p("./crypto.js"):
+            # The same URL tachiyomi uses.
+            cryptojs = request("https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js")
+            with open("./crypto.js", "w") as f:
+                f.write(cryptojs.read().decode("utf-8"))
         if "chapter" in url:
             do1(batoto_get_images, url, basename(url))
         else:
