@@ -32,6 +32,8 @@ DYNASTY_IMAGE_RE = re.compile(r"//<!\[CDATA\[")
 BATOTO_IMAGE_RE_1  = re.compile(r"(?:const|var) images = \[")
 BATOTO_IMAGE_RE_2  = re.compile(r"(?:const|var) imgHttpLis = \[")
 REDDIT_RE = re.compile(r"https?://(?:www\.|m\.|np\.)?reddit\.com/")
+IMGUR_RE = re.compile(r"https?://(?:www\.|m\.|i\.)?imgur\.com/")
+CUBARI_IMGUR_RE = re.compile(r"https?://cubari\.moe/read/imgur/([0-9A-Za-z]+)/?")
 JS_CTXT          = None
 PROCS = []
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
@@ -146,6 +148,15 @@ def libreddit_get_images(url):
         for i in gallery.find_all("img")
     ]
 
+def rimgo_get_images(url):
+    soup = bs4.BeautifulSoup(request(url), "html.parser")
+    imgs = soup.find_all("img", loading="lazy") # Probably will break often.
+    if imgs:
+        return [
+            "https://i.bcow.xyz" + i["src"] for i in imgs
+        ]
+    return []
+
 def do1(image_fun, url, dirname):
     images = image_fun(url)
     if MKDIRP: mkdir(dirname)
@@ -179,6 +190,17 @@ def do(url):
         do1(libreddit_get_images,
             re.sub(REDDIT_RE, "https://libreddit.com/", url),
             basename(url.strip("/")))
+    elif "i.bcow.xyz" in url:
+        if "/a/" in url:
+            do1(rimgo_get_images, url, basename(url.strip("/")))
+    elif "imgur.com" in url:
+        if "/a/" in url:
+            do1(rimgo_get_images,
+                re.sub(IMGUR_RE, "https://i.bcow.xyz/", url),
+                basename(url.strip("/")))
+    elif "cubari.moe/read" in url:
+        if "/imgur/" in url and (match := re.match(CUBARI_IMGUR_RE, url)):
+            do1(rimgo_get_images, "https://i.bcow.xyz/a/" + match.group(1), match.group(1))
     elif "bato.to" in url:
         # There seems to be a race condition somewhere when trying
         # to eval crypto.js so just fetch it earlier when the
