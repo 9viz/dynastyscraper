@@ -136,6 +136,14 @@ def batoto_get_images(ch):
 
     return []
 
+def libreddit_get_images(url):
+    soup = bs4.BeautifulSoup(request(url), "html.parser")
+    gallery = soup.find("div", class_="gallery")
+    if not gallery: return []
+    return [
+        "https://libreddit.spike.codes" + i["src"]
+        for i in gallery.find_all("img")
+    ]
 
 def do1(image_fun, url, dirname):
     images = image_fun(url)
@@ -164,6 +172,8 @@ def do(url):
                         name=url)
                     PROCS.append(p)
                     p.start()
+    elif "libreddit.spike.codes" in url:
+        do1(libreddit_get_images, url, basename(url.strip("/")))
     elif "bato.to" in url:
         # There seems to be a race condition somewhere when trying
         # to eval crypto.js so just fetch it earlier when the
