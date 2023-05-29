@@ -115,7 +115,7 @@ def batoto_get_images(ch):
         return JS_CTXT.eval_js(string)
 
     soup = bs4.BeautifulSoup(request(ch), "html.parser")
-    if js := soup.find("script", text=BATOTO_IMAGE_RE_1):
+    if js := soup.find("script", string=BATOTO_IMAGE_RE_1):
         # Most of this magic can be figured out by reading the JavaScript
         # sources in a chapter page.  Alternatively, refer to
         # https://github.com/tachiyomiorg/tachiyomi-extensions/blob/master/src/all/batoto/src/eu/kanade/tachiyomi/extension/all/batoto/BatoTo.kt
@@ -124,7 +124,7 @@ def batoto_get_images(ch):
         batojs = re.search(r"(?:const|var) batojs = ([^;]+);", js).group(1)
         base = js_eval(f"CryptoJS.AES.decrypt({server} ,{batojs}).toString(CryptoJS.enc.Utf8);").strip("\"")
         return [ base + i for i in json.loads(re.search(r"(?:const|var) images = (\[.*\]);", js).group(1)) ]
-    elif js := soup.find("script", text=BATOTO_IMAGE_RE_2):
+    elif js := soup.find("script", string=BATOTO_IMAGE_RE_2):
         # Again, thanks to tachiyomi for showing the light.  It is
         # also easy enough to figure out if you read the JS files.
         js = js.string
