@@ -144,7 +144,7 @@ def libreddit_get_images(url):
     gallery = soup.find("div", class_="gallery")
     if not gallery: return []
     return [
-        "https://libreddit.spike.codes" + i["src"]
+        "https://lr.slipfox.xyz" + i["src"]
         for i in gallery.find_all("img")
     ]
 
@@ -153,7 +153,7 @@ def rimgo_get_images(url):
     imgs = soup.find_all("img", loading="lazy") # Probably will break often.
     if imgs:
         return [
-            "https://i.bcow.xyz" + i["src"] for i in imgs
+            "https://rimgo.kling.gg" + i["src"] for i in imgs
         ]
     return []
 
@@ -183,23 +183,23 @@ def do(url):
                         name=url)
                     PROCS.append(p)
                     p.start()
-    elif "libreddit.spike.codes" in url:
+    elif "lr.slipfox.xyz" in url:
         do1(libreddit_get_images, url, basename(url.strip("/")))
     elif "reddit.com" in url:
         do1(libreddit_get_images,
-            re.sub(REDDIT_RE, "https://libreddit.com/", url),
+            re.sub(REDDIT_RE, "https://lr.slipfox.xyz/", url),
             basename(url.strip("/")))
-    elif "i.bcow.xyz" in url:
+    elif "rimgo.kling.gg" in url:
         if "/a/" in url:
             do1(rimgo_get_images, url, basename(url.strip("/")))
     elif "imgur.com" in url:
         if "/a/" in url:
             do1(rimgo_get_images,
-                re.sub(IMGUR_RE, "https://i.bcow.xyz/", url),
+                re.sub(IMGUR_RE, "https://rimgo.kling.gg/", url),
                 basename(url.strip("/")))
     elif "cubari.moe/read" in url:
         if "/imgur/" in url and (match := re.match(CUBARI_IMGUR_RE, url)):
-            do1(rimgo_get_images, "https://i.bcow.xyz/a/" + match.group(1), match.group(1))
+            do1(rimgo_get_images, "https://rimgo.kling.gg/a/" + match.group(1), match.group(1))
     elif "bato.to" in url:
         # There seems to be a race condition somewhere when trying
         # to eval crypto.js so just fetch it earlier when the
