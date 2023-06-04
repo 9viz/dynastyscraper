@@ -166,7 +166,7 @@ def do1(image_fun, url, dirname):
             ext, _, _ = ext.partition("?")
         # For --retry-on-host-error, see https://lists.gnu.org/r/bug-wget/2018-06/msg00012.html
         # and (info "(wget) HTTP Options").  This is for my flaky internet connection.
-        print("wget -c --retry-on-host-error {} -O {}".format(
+        print("wget -U -c --retry-on-host-error {} -O {}".format(
             shell_quote(i), shell_quote(f"{dirname}/{n+1:03}{ext}")))
 
 def do(url):
@@ -177,7 +177,6 @@ def do(url):
             chp = dynasty_get_chapter_list(url)
             for vol, ch in chp.items():
                 for prefix, url in ch:
-                    print((vol+"_" if vol else "")+prefix)
                     p = multiproc.Process(
                         target=do1,
                         args=(dynasty_get_images, url, (vol+"_" if vol else "")+prefix),
