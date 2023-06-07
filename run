@@ -18,6 +18,8 @@ type python || {
 
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
+echo "$@" >.url
+
 parallel -j64 <wget.sh			# 64 should be harmless.
 
 # zathura(1) can't handle webp images as of [2022-06-10 வெ 18:00].
