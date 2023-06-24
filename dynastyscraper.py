@@ -38,6 +38,7 @@ JS_CTXT          = None
 PROCS = []
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
 MKDIRP           = not getenv("DRY")
+SKIPFETCHEDP = getenv("SKIPFETCHED")
 
 def request(url):
     """Request URL."""
@@ -158,8 +159,11 @@ def rimgo_get_images(url):
     return []
 
 def do1(image_fun, url, dirname):
-    images = image_fun(url)
+    if file_exists_p(dirname) and SKIPFETCHEDP:
+            continue
     if MKDIRP: mkdir(dirname)
+
+    images = image_fun(url)
     for n, i in enumerate(images):
         _, ext = splitext(i)
         if "?" in ext:
