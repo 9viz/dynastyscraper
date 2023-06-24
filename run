@@ -9,12 +9,14 @@ mkdcd(){
 
 mkdcd ${DSTMPDIR:=./tmp}
 
-[ -f $BASE/.venv/bin/activate ] && . $BASE/.venv/bin/activate
+# [ -f $BASE/.venv/bin/activate ] && . $BASE/.venv/bin/activate
 
 # If python(1) is not "present", then alias it to python3.
 type python || {
 	alias python=python3
 }
+
+export SKIPFETCHED=t
 
 [ $# -ne 0 ] && python $BASE/dynastyscraper.py "$@" >wget.sh
 
