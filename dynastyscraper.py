@@ -160,7 +160,7 @@ def rimgo_get_images(url):
 
 def do1(image_fun, url, dirname):
     if file_exists_p(dirname) and SKIPFETCHEDP:
-            continue
+            return
     if MKDIRP: mkdir(dirname)
 
     images = image_fun(url)
