@@ -23,6 +23,7 @@ from os.path    import splitext, basename
 from os.path    import exists as file_exists_p
 from shlex      import quote as shell_quote
 from sys        import argv
+from urllib.parse import urlparse
 import re
 import urllib.request as req
 
@@ -34,6 +35,8 @@ BATOTO_IMAGE_RE_2  = re.compile(r"(?:const|var) imgHttpLis = \[")
 REDDIT_RE = re.compile(r"https?://(?:www\.|m\.|np\.)?reddit\.com/")
 IMGUR_RE = re.compile(r"https?://(?:www\.|m\.|i\.)?imgur\.com/")
 CUBARI_IMGUR_RE = re.compile(r"https?://cubari\.moe/read/imgur/([0-9A-Za-z]+)/?")
+DANKEMOE_BASE_API_PATH = "https://danke.moe/api/series/"
+DANKEMOE_MEDIAURL = "https://danke.moe/media/manga/"
 JS_CTXT          = None
 PROCS = []
 UA               = { "User-Agent": "Chrome/96.0.4664.110" }
@@ -158,6 +161,65 @@ def rimgo_get_images(url):
         ]
     return []
 
+def dankemoe__chapterp(url):
+    """Return True if URL is a chapter URL."""
+    u = urlparse(url).path.split("/")
+    return u[-3].isnumeric()
+
+def dankemoe__fetch_chapter_imgs(ch, slug):
+    """Return [ NAME, IMAGES... ] for chapter json CH.
+    SLUG is the series SLUG.
+    Note that first group translation is always returned.
+
+    """
+    group = list(ch["groups"].keys())[0]
+    title = ch.get("title", "")
+    if title == "":
+        title = "Chapter " + i
+    else:
+        title = "Chapter " + i + ": " + title
+    return [
+        title,
+        *[
+            DANKEMOE_MEDIAURL
+            + slug \
+            + "/chapters/" \
+            + ch["folder"] \
+            + "/"
+            + group
+            + "/"
+            + i
+            for i in ch["groups"][group]
+        ]
+    ]
+
+def dankemoe_get_chapter_list(url):
+    """Return list of [ NAME, IMAGES... ]  for series URL URL.
+    NAME is the name of the chapter, and IMAGES... is the URL for
+    images of the chapter.
+
+    """
+    u = urlparse(url).path.split("/")
+    slug = u[-2]
+    j = json.loads(request(DANKEMOE_BASE_API_PATH + slug).read())
+    ret = []
+
+    for i in j["chapters"]:
+        ch = j["chapters"][i]
+        ret.append(dankemoe__fetch_chapter_imgs(ch, slug))
+
+    return ret
+
+def dankemoe_get_chapter(url):
+    """Return [ NAME, IMAGES... ] for chapter url URL."""
+    u = urlparse(url).path.split("/")
+    chno = u[-3].replace("-", ".")
+    slug = u[-4]
+
+    j = json.loads(request(DANKEMOE_BASE_API_PATH + slug).read())
+    ch = j["chapters"][chno]
+    return dankemoe__fetch_chapter_imgs(ch, slug)
+
 def do1(image_fun, url, dirname):
     if file_exists_p(dirname) and SKIPFETCHEDP:
             return
@@ -204,6 +266,18 @@ def do(url):
     elif "cubari.moe/read" in url:
         if "/imgur/" in url and (match := re.match(CUBARI_IMGUR_RE, url)):
             do1(rimgo_get_images, "https://rimgo.kling.gg/a/" + match.group(1), match.group(1))
+    elif "danke.moe" in url:
+        if not dankemoe__chapterp(url):
+            chp = dankemoe_get_chapter_list(url)
+            for name, *imgs in chp:
+                p = multiproc.Process(
+                    target=do1,
+                    args=(lambda x: x, imgs, name),
+                    name=name)
+                PROCS.append(p)
+                p.start()
+        else:
+            pass
     elif "bato.to" in url:
         # There seems to be a race condition somewhere when trying
         # to eval crypto.js so just fetch it earlier when the
