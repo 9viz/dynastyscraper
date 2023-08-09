@@ -241,14 +241,16 @@ def do(url):
             do1(dynasty_get_images, url, basename(url))
         else:
             chp = dynasty_get_chapter_list(url)
+            nch = 1
             for vol, ch in chp.items():
                 for prefix, url in ch:
                     p = multiproc.Process(
                         target=do1,
-                        args=(dynasty_get_images, url, (vol+"_" if vol else "")+prefix),
+                        args=(dynasty_get_images, url, (str(nch)+"."+vol+"_" if vol else "")+prefix),
                         name=url)
                     PROCS.append(p)
                     p.start()
+                    nch += 1
     elif "lr.slipfox.xyz" in url:
         do1(libreddit_get_images, url, basename(url.strip("/")))
     elif "reddit.com" in url:
@@ -269,13 +271,15 @@ def do(url):
     elif "danke.moe" in url:
         if not dankemoe__chapterp(url):
             chp = dankemoe_get_chapter_list(url)
+            nch = 1
             for name, *imgs in chp:
                 p = multiproc.Process(
                     target=do1,
-                    args=(lambda x: x, imgs, name),
+                    args=(lambda x: x, imgs, str(nch)+"."+name),
                     name=name)
                 PROCS.append(p)
                 p.start()
+                nch += 1
         else:
             name, *imgs = dankemoe_get_chapter(url)
             do1(lambda x: x, imgs, name)
@@ -292,13 +296,15 @@ def do(url):
             do1(batoto_get_images, url, basename(url))
         else:
             chp = batoto_get_chapter_list(url)
+            nch = 1
             for name, ch in chp:
                 p = multiproc.Process(
                     target=do1,
-                    args=(batoto_get_images, ch, name.replace("\n", "", True)),
+                    args=(batoto_get_images, ch, str(nch)+"."+name.replace("\n", "", True)),
                     name=ch)
                 PROCS.append(p)
                 p.start()
+                nch += 1
 
 if __name__ == "__main__":
     for i in argv[1:]:
